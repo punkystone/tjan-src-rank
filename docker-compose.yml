@@ -4,6 +4,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    environment:
+      - USER_NAME
     ports: 
       - "80:80"
     restart: unless-stopped
