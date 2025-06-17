@@ -1,0 +1,9 @@
+services:
+  tjan-scr-rank:
+    container_name: tjan-scr-rank
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports: 
+      - "80:80"
+    restart: unless-stopped
