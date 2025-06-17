@@ -6,13 +6,6 @@ services:
       dockerfile: Dockerfile
     environment:
       - USER_NAME
-    expose: 
-      - 80
+    ports: 
+      - "80:80"
     restart: unless-stopped
-    networks:
-      - main-network
-
-networks:
-  main-network:
-    name: main-network
-    external: true
