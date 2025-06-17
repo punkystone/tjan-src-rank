@@ -1,12 +1,13 @@
 package server
 
 import (
+	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"time"
 	"tjan-src-rank/internal/src"
-
-	"github.com/rs/zerolog/log"
+	"tjan-src-rank/internal/util"
 )
 
 const timeout = 5
@@ -16,11 +17,15 @@ type Handler struct {
 }
 
 func (handler *Handler) rankHandler(w http.ResponseWriter, _ *http.Request) {
-	rank := handler.SrcAPI.GetRank("TjanTV")
-	_, err := io.WriteString(w, rank)
+	id, rank, time, err := handler.SrcAPI.GetRun()
 	if err != nil {
-		log.Error().Err(err).Msg("Failed to write response")
+		if errors.Is(err, src.ErrNoRunsFound) {
+			_, _ = io.WriteString(w, "Keine Runs gefunden")
+		} else {
+			_, _ = io.WriteString(w, "@punkystone irgendwas kaputt DinkDonk")
+		}
 	}
+	_, _ = io.WriteString(w, fmt.Sprintf("Tjans aktueller Platz: %d (%s): https://www.speedrun.com/mc/runs/%s", rank, util.FormatSeconds(time), id))
 }
 
 func StartServer(srcAPI *src.API) error {

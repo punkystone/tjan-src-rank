@@ -8,6 +8,11 @@ import (
 	"net/http"
 )
 
+const mincraftGameID = "j1npme6p"
+const anyPercentGlitchlessCategoryID = "mkeyl926"
+
+var ErrNoRunsFound = errors.New("no runs found")
+
 type API struct {
 	UserID string
 }
@@ -20,8 +25,37 @@ func New(user string) (*API, error) {
 	return &API{UserID: userID}, nil
 }
 
-func (s *API) GetRank(user string) string {
-	return "100"
+func (api *API) GetRun() (string, int, float64, error) {
+	parameters := map[string]string{
+		"userId": api.UserID,
+	}
+	encodedParameters, err := encodeParameters(parameters)
+	if err != nil {
+		return "", 0, 0, fmt.Errorf("encode parameters failed: %w", err)
+	}
+	response, err := http.Get(fmt.Sprintf("https://www.speedrun.com/api/v2/GetUserLeaderboard?_r=%s", encodedParameters))
+	if err != nil {
+		return "", 0, 0, fmt.Errorf("get user summary failed: %w", err)
+	}
+	defer response.Body.Close()
+	if response.StatusCode != http.StatusOK {
+		return "", 0, 0, errors.New("get user summary failed with status: " + response.Status)
+	}
+	getUserLeaderboard := GetUserLeaderboardResponse{}
+	err = json.NewDecoder(response.Body).Decode(&getUserLeaderboard)
+	if err != nil {
+		return "", 0, 0, fmt.Errorf("decode response body failed: %w", err)
+	}
+	if len(getUserLeaderboard.Runs) == 0 {
+		return "", 0, 0, ErrNoRunsFound
+	}
+	for _, run := range getUserLeaderboard.Runs {
+		if run.Obsolete || run.GameID != mincraftGameID || run.CategoryID != anyPercentGlitchlessCategoryID {
+			continue
+		}
+		return run.ID, run.Place, run.Igt, nil
+	}
+	return "", 0, 0, ErrNoRunsFound
 }
 
 func encodeParameters(parameters map[string]string) (string, error) {
